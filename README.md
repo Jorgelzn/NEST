@@ -1,5 +1,3 @@
-# NEST
-
-<img src="media/feather.png" alt="drawing" width="400"/>
+# NEST <img src="media/feather.png" alt="drawing" width="50"/>
 
 Natural Environments Simulator for Terminal
