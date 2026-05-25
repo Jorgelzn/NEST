@@ -1,14 +1,9 @@
-use ratatui::style::{Stylize,Color};
-use ratatui::widgets::{Block, Paragraph};
+use ratatui::style::{Color};
+use ratatui::widgets::{Block};
 use ratatui::widgets::canvas::{Canvas, Line, Map, MapResolution, Rectangle};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ratatui::run(|terminal| {
-        terminal.draw(|frame| {
-            let block = Block::bordered().title("Welcome");
-            let greeting = Paragraph::new("Hello, Ratatui! 🐭")
-                .centered()
-                .yellow()
-                .block(block);
+    ratatui::run(|myterminal| {
+        myterminal.draw(|myframe| {
             let canvas = Canvas::default()
                 .block(Block::bordered().title("Canvas"))
                 .x_bounds([-180.0, 180.0])
@@ -34,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         color: Color::Red,
                     });
                 });
-            frame.render_widget(canvas, frame.area());
+            myframe.render_widget(canvas, myframe.area());
         })?;
         std::thread::sleep(std::time::Duration::from_secs(5));
         Ok(())
