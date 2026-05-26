@@ -2,13 +2,14 @@ use std::io;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
-    buffer::Buffer,
-    layout::{Rect,Constraint,Layout},
-    style::Stylize,
-    text::Line,
-    symbols::border,
-    widgets::{Block, Widget,Paragraph},
-    DefaultTerminal, Frame,
+    DefaultTerminal, 
+    Frame, 
+    buffer::Buffer, 
+    layout::{Constraint, Layout, Rect}, 
+    style::Stylize, 
+    symbols::border, 
+    text::Line, 
+    widgets::{Block, Paragraph, Widget}
 };
 
 
@@ -96,22 +97,6 @@ impl App {
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let col_constraints = (0..self.cols).map(|_| Constraint::Length(3));
-        let row_constraints = (0..self.rows).map(|_| Constraint::Length(3));
-        let horizontal = Layout::horizontal(col_constraints).spacing(1);
-        let vertical = Layout::vertical(row_constraints).spacing(1);
-
-        let rows = vertical.split(area);
-        let cells = rows.iter().flat_map(|&row| horizontal.split(row).to_vec());
-
-        for (i, cell) in cells.enumerate() {
-
-            Paragraph::new(if i + 1 == self.posx { format!("{:02}", i + 1).blue() } else {format!("{:02}", i + 1).red()})
-                .block(Block::bordered())
-                .render(cell, buf);
-        }
-
-
         let title = Line::from(" NEST ".bold());
         let instructions = Line::from(vec![
             " Directional Movement ".into(),
@@ -125,12 +110,24 @@ impl Widget for &App {
             " Quit ".into(),
             "<Q> ".blue().bold(),
         ]);
-        let block = Block::bordered()
+        let myblock = Block::bordered()
             .title(title.centered())
             .title_bottom(instructions.centered())
             .border_set(border::THICK);
+        let inner_area = myblock.inner(area);
 
-        block.render(area, buf);
+        let col_constraints = (0..self.cols).map(|_| Constraint::Length(3));
+        let row_constraints = (0..self.rows).map(|_| Constraint::Length(2));
+        let horizontal = Layout::horizontal(col_constraints).spacing(-1).vertical_margin(0);
+        let vertical = Layout::vertical(row_constraints).spacing(-1).vertical_margin(0);
+        let rows = vertical.split(inner_area);
+        let cells = rows.iter().flat_map(|&row| horizontal.split(row).to_vec());
+        for (i, cell) in cells.enumerate() {
+
+            Paragraph::new(if i + 1 == self.posx { "0".blue() } else {"0".red()})
+                .render(cell, buf);
+        }
+        myblock.render(area, buf);
 
     }
 
@@ -143,8 +140,8 @@ impl Default for App {
             posx: 0,
             posy: 0,
             zoom: 1,
-            cols: 4,
-            rows: 4
+            cols: 50,
+            rows: 5
         }
     }
 }
