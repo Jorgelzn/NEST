@@ -4,17 +4,20 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    style::Stylize,
-    symbols::border,
-    text::{Line, Text},
-    widgets::{Block, Paragraph, Widget},
+    style::{Stylize,Color},
+    symbols::{border,Marker},
+    text::Line,
+    widgets::{Block, Widget, canvas},
     DefaultTerminal, Frame,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct App {
-    counter: u8,
     exit: bool,
+    posx: f64,
+    posy: f64,
+    zoom_x: f64,
+    zoom_y: f64,
 }
 
 impl App {
@@ -29,6 +32,7 @@ impl App {
     }
 
     fn draw(&self, frame: &mut Frame) {
+        //println!("{}  {}",self.posx,self.posy);
         frame.render_widget(self, frame.area());
     }
 
@@ -47,8 +51,12 @@ impl App {
     fn handle_key_event(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
-            KeyCode::Left => self.decrement_counter(),
-            KeyCode::Right => self.increment_counter(),
+            KeyCode::Left => self.move_left(),
+            KeyCode::Right => self.move_right(),
+            KeyCode::Up => self.move_up(),
+            KeyCode::Char('z') => self.zoom_up(),
+            KeyCode::Char('x') => self.zoom_down(),
+            KeyCode::Down => self.move_down(),
             _ => {}
         }
     }
@@ -57,23 +65,45 @@ impl App {
         self.exit = true;
     }
 
-    fn increment_counter(&mut self) {
-        self.counter += 1;
+    fn move_right(&mut self) {
+        self.posx += 1.0;
     }
 
-    fn decrement_counter(&mut self) {
-        self.counter -= 1;
+    fn move_left(&mut self) {
+        self.posx -= 1.0;
+    }
+
+    fn move_up(&mut self) {
+        self.posy += 1.0;
+    }
+
+    fn move_down(&mut self) {
+        self.posy -= 1.0;
+    }
+
+    fn zoom_up(&mut self) {
+        self.zoom_x += 2.0;
+        self.zoom_y += 1.0;
+    }
+
+    fn zoom_down(&mut self) {
+        self.zoom_x -= 2.0;
+        self.zoom_y -= 1.0;
     }
 }
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Line::from(" Counter App Tutorial ".bold());
+        let title = Line::from(" NEST ".bold());
         let instructions = Line::from(vec![
-            " Decrement ".into(),
-            "<Left>".blue().bold(),
-            " Increment ".into(),
-            "<Right>".blue().bold(),
+            " Directional Movement ".into(),
+            "<Left> ".blue().bold(),
+            "<Right> ".blue().bold(),
+            "<Up> ".blue().bold(),
+            "<Down>".blue().bold(),
+            " Zoom ".into(),
+            "<Z> ".blue().bold(),
+            "<X> ".blue().bold(),
             " Quit ".into(),
             "<Q> ".blue().bold(),
         ]);
@@ -82,17 +112,33 @@ impl Widget for &App {
             .title_bottom(instructions.centered())
             .border_set(border::THICK);
 
-        let counter_text = Text::from(vec![Line::from(vec![
-            "Value: ".into(),
-            self.counter.to_string().yellow(),
-        ])]);
-
-        Paragraph::new(counter_text)
-            .centered()
-            .block(block)
-            .render(area, buf);
+        canvas::Canvas::default()
+        .x_bounds([-self.zoom_x, self.zoom_x])
+        .y_bounds([-self.zoom_y, self.zoom_y])
+        .marker(Marker::Braille)
+        .paint(|ctx| {
+            ctx.draw(&canvas::Circle {
+                x: self.posx,
+                y: self.posy,
+                radius: 1.0,
+                color: Color::Red,
+            });
+        }).block(block)
+        .render(area, buf);
     }
 
+}
+
+impl Default for App {
+    fn default() -> App {
+        App {
+            exit: false,
+            posx: 0.0,
+            posy: 0.0,
+            zoom_x: 20.0,
+            zoom_y: 5.0,
+        }
+    }
 }
 
 #[cfg(test)]
