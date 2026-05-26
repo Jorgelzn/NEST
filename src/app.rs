@@ -3,11 +3,11 @@ use std::io;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
-    layout::Rect,
-    style::{Stylize,Color},
-    symbols::{border,Marker},
+    layout::{Rect,Constraint,Layout},
+    style::Stylize,
     text::Line,
-    widgets::{Block, Widget, canvas},
+    symbols::border,
+    widgets::{Block, Widget,Paragraph},
     DefaultTerminal, Frame,
 };
 
@@ -15,9 +15,11 @@ use ratatui::{
 #[derive(Debug)]
 pub struct App {
     exit: bool,
-    posx: f64,
-    posy: f64,
-    zoom: f64
+    posx: usize,
+    posy: usize,
+    zoom: usize,
+    cols: usize,
+    rows: usize,
 }
 
 impl App {
@@ -67,36 +69,49 @@ impl App {
     }
 
     fn move_right(&mut self) {
-        self.posx += 1.0;
+        self.posx += 1;
     }
 
     fn move_left(&mut self) {
-        self.posx -= 1.0;
+        self.posx -= 1;
     }
 
     fn move_up(&mut self) {
-        self.posy += 1.0;
+        self.posy += 1;
     }
 
     fn move_down(&mut self) {
-        self.posy -= 1.0;
+        self.posy -= 1;
     }
 
     fn zoom_up(&mut self) {
-        self.zoom += 0.1;
+        self.zoom += 1;
         
     }
 
     fn zoom_down(&mut self) {
-        self.zoom -= 0.1;
+        self.zoom -= 1;
     }
 }
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let terminal_dim = area.as_size();
-        let x_bound = terminal_dim.width  as f64 * self.zoom;
-        let y_bound = terminal_dim.height as f64 * self.zoom;
+        let col_constraints = (0..self.cols).map(|_| Constraint::Length(3));
+        let row_constraints = (0..self.rows).map(|_| Constraint::Length(3));
+        let horizontal = Layout::horizontal(col_constraints).spacing(1);
+        let vertical = Layout::vertical(row_constraints).spacing(1);
+
+        let rows = vertical.split(area);
+        let cells = rows.iter().flat_map(|&row| horizontal.split(row).to_vec());
+
+        for (i, cell) in cells.enumerate() {
+
+            Paragraph::new(if i + 1 == self.posx { format!("{:02}", i + 1).blue() } else {format!("{:02}", i + 1).red()})
+                .block(Block::bordered())
+                .render(cell, buf);
+        }
+
+
         let title = Line::from(" NEST ".bold());
         let instructions = Line::from(vec![
             " Directional Movement ".into(),
@@ -115,18 +130,8 @@ impl Widget for &App {
             .title_bottom(instructions.centered())
             .border_set(border::THICK);
 
-        canvas::Canvas::default()
-        .x_bounds([-x_bound+self.posx, x_bound+self.posx])
-        .y_bounds([-y_bound+self.posy, y_bound+self.posy])
-        .marker(Marker::Braille)
-        .paint(|ctx| {
-                        ctx.draw(&canvas::Map {
-                resolution: canvas::MapResolution::High,
-                color: Color::White,
-            });
-        })
-        .block(block)
-        .render(area, buf);
+        block.render(area, buf);
+
     }
 
 }
@@ -135,9 +140,11 @@ impl Default for App {
     fn default() -> App {
         App {
             exit: false,
-            posx: 0.0,
-            posy: 0.0,
-            zoom: 1.0
+            posx: 0,
+            posy: 0,
+            zoom: 1,
+            cols: 4,
+            rows: 4
         }
     }
 }
