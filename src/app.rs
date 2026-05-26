@@ -97,13 +97,13 @@ impl Widget for &App {
         let title = Line::from(" NEST ".bold());
         let instructions = Line::from(vec![
             " Directional Movement ".into(),
-            "<A-Left> ".blue().bold(),
-            "<W-Right> ".blue().bold(),
-            "<S-Down> ".blue().bold(),
-            "<D-Up>".blue().bold(),
+            "<A/Left> ".blue().bold(),
+            "<W/Right> ".blue().bold(),
+            "<S/Down> ".blue().bold(),
+            "<D/Up>".blue().bold(),
             " Zoom ".into(),
-            "<Z> ".blue().bold(),
-            "<X> ".blue().bold(),
+            "<Z/-> ".blue().bold(),
+            "<X/+> ".blue().bold(),
             " Quit ".into(),
             "<Q> ".blue().bold(),
         ]);
