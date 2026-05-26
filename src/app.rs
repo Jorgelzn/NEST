@@ -51,12 +51,12 @@ impl App {
     fn handle_key_event(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
-            KeyCode::Left => self.move_left(),
-            KeyCode::Right => self.move_right(),
-            KeyCode::Up => self.move_up(),
+            KeyCode::Char('a') => self.move_left(),
+            KeyCode::Char('d') => self.move_right(),
+            KeyCode::Char('w') => self.move_up(),
+            KeyCode::Char('s') => self.move_down(),
             KeyCode::Char('z') => self.zoom_up(),
             KeyCode::Char('x') => self.zoom_down(),
-            KeyCode::Down => self.move_down(),
             _ => {}
         }
     }
@@ -97,10 +97,10 @@ impl Widget for &App {
         let title = Line::from(" NEST ".bold());
         let instructions = Line::from(vec![
             " Directional Movement ".into(),
-            "<Left> ".blue().bold(),
-            "<Right> ".blue().bold(),
-            "<Up> ".blue().bold(),
-            "<Down>".blue().bold(),
+            "<A-Left> ".blue().bold(),
+            "<W-Right> ".blue().bold(),
+            "<S-Down> ".blue().bold(),
+            "<D-Up>".blue().bold(),
             " Zoom ".into(),
             "<Z> ".blue().bold(),
             "<X> ".blue().bold(),
