@@ -11,19 +11,20 @@ use ratatui::{
     DefaultTerminal, Frame,
 };
 
+
 #[derive(Debug)]
 pub struct App {
     exit: bool,
     posx: f64,
     posy: f64,
-    zoom_x: f64,
-    zoom_y: f64,
+    zoom: f64
 }
 
 impl App {
 
     /// runs the application's main loop until the user quits
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
+        
         while !self.exit {
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_events()?;
@@ -82,18 +83,19 @@ impl App {
     }
 
     fn zoom_up(&mut self) {
-        self.zoom_x += 2.0;
-        self.zoom_y += 1.0;
+        self.zoom += 0.1;
     }
 
     fn zoom_down(&mut self) {
-        self.zoom_x -= 2.0;
-        self.zoom_y -= 1.0;
+        self.zoom -= 0.1;
     }
 }
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        let terminal_dim = area.as_size();
+        let x_bound = terminal_dim.width  as f64 * self.zoom;
+        let y_bound = terminal_dim.height as f64 * self.zoom;
         let title = Line::from(" NEST ".bold());
         let instructions = Line::from(vec![
             " Directional Movement ".into(),
@@ -113,8 +115,8 @@ impl Widget for &App {
             .border_set(border::THICK);
 
         canvas::Canvas::default()
-        .x_bounds([-self.zoom_x, self.zoom_x])
-        .y_bounds([-self.zoom_y, self.zoom_y])
+        .x_bounds([-x_bound, x_bound])
+        .y_bounds([-y_bound, y_bound])
         .marker(Marker::Braille)
         .paint(|ctx| {
             ctx.draw(&canvas::Circle {
@@ -135,8 +137,7 @@ impl Default for App {
             exit: false,
             posx: 0.0,
             posy: 0.0,
-            zoom_x: 20.0,
-            zoom_y: 5.0,
+            zoom: 1.0
         }
     }
 }
