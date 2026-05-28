@@ -1,6 +1,6 @@
-use std::io;
+use std::{io, vec};
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}};
 use ratatui::{
     DefaultTerminal, 
     Frame, 
@@ -14,20 +14,26 @@ use ratatui::{
 
 
 #[derive(Debug)]
-pub struct App {
+pub struct App<'a>{
     exit: bool,
     posx: usize,
     posy: usize,
-    zoom: usize,
-    cols: usize,
-    rows: usize,
+    map: Vec<String>,
+    cells: Vec<Rect>,
+    block: Block<'a>
 }
 
-impl App {
+impl App<'_>{
 
     /// runs the application's main loop until the user quits
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        
+        let inner_area = self.block.inner(terminal.get_frame().area());
+        let col_constraints = (self.posx..self.map[0].len() as usize).map(|_| Constraint::Length(3));
+        let row_constraints = (self.posy..self.map.len()  as usize).map(|_| Constraint::Length(2));
+        let horizontal = Layout::horizontal(col_constraints).spacing(-1).vertical_margin(0);
+        let vertical = Layout::vertical(row_constraints).spacing(-1).vertical_margin(0);
+        let rows = vertical.split(inner_area);
+        self.cells = rows.iter().flat_map(|&row| horizontal.split(row).to_vec()).collect();
         while !self.exit {
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_events()?;
@@ -35,8 +41,7 @@ impl App {
         Ok(())
     }
 
-    fn draw(&self, frame: &mut Frame) {
-        //println!("{}  {}",self.posx,self.posy);
+    pub fn draw(&self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
     }
 
@@ -59,8 +64,6 @@ impl App {
             KeyCode::Char('d') => self.move_right(),
             KeyCode::Char('w') => self.move_up(),
             KeyCode::Char('s') => self.move_down(),
-            KeyCode::Char('z') => self.zoom_up(),
-            KeyCode::Char('x') => self.zoom_down(),
             _ => {}
         }
     }
@@ -84,64 +87,49 @@ impl App {
     fn move_down(&mut self) {
         self.posy -= 1;
     }
-
-    fn zoom_up(&mut self) {
-        self.zoom += 1;
-        
-    }
-
-    fn zoom_down(&mut self) {
-        self.zoom -= 1;
-    }
 }
 
-impl Widget for &App {
+impl Widget for &App<'_>{
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Line::from(" NEST ".bold());
-        let instructions = Line::from(vec![
+        for cell in self.cells.iter(){
+            Paragraph::new("S".blue())
+                .render(*cell, buf);
+        }
+       self.block.clone().render(area,buf);
+
+    }
+
+}
+
+impl Default for App<'_>{
+    fn default() -> App<'static>{
+        App{
+            exit: false,
+            posx: 0,
+            posy: 0,
+            map: vec![
+                "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss".into(),
+                "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss".into(),
+                "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss".into(),
+                "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss".into(),
+                "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss".into(),
+                "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss".into(),
+                "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss".into(),
+                "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss".into(),
+                "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss".into(),
+                "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss".into(),],
+            cells: Vec::new(),
+            block: Block::bordered().title(Line::from(" NEST ".bold()).centered())
+             .title_bottom(Line::from(vec![
             " Directional Movement ".into(),
             "<A/Left> ".blue().bold(),
             "<W/Right> ".blue().bold(),
             "<S/Down> ".blue().bold(),
             "<D/Up>".blue().bold(),
-            " Zoom ".into(),
-            "<Z/-> ".blue().bold(),
-            "<X/+> ".blue().bold(),
             " Quit ".into(),
             "<Q> ".blue().bold(),
-        ]);
-        let myblock = Block::bordered()
-            .title(title.centered())
-            .title_bottom(instructions.centered())
-            .border_set(border::THICK);
-        let inner_area = myblock.inner(area);
-
-        let col_constraints = (0..self.cols).map(|_| Constraint::Length(3));
-        let row_constraints = (0..self.rows).map(|_| Constraint::Length(2));
-        let horizontal = Layout::horizontal(col_constraints).spacing(-1).vertical_margin(0);
-        let vertical = Layout::vertical(row_constraints).spacing(-1).vertical_margin(0);
-        let rows = vertical.split(inner_area);
-        let cells = rows.iter().flat_map(|&row| horizontal.split(row).to_vec());
-        for (i, cell) in cells.enumerate() {
-
-            Paragraph::new(if i + 1 == self.posx { "0".blue() } else {"0".red()})
-                .render(cell, buf);
-        }
-        myblock.render(area, buf);
-
-    }
-
-}
-
-impl Default for App {
-    fn default() -> App {
-        App {
-            exit: false,
-            posx: 0,
-            posy: 0,
-            zoom: 1,
-            cols: 50,
-            rows: 5
+        ]).centered())
+        .border_set(border::THICK)
         }
     }
 }
